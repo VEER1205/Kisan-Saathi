@@ -6,14 +6,16 @@ import FarmerDashboard from './pages/FarmerDashboard'
 import DriverDashboard from './pages/DriverDashboard'
 
 function ProtectedRoute({ children, role }) {
-  const { user } = useAuth()
+  const { user, authLoading } = useAuth()
+  if (authLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '2rem' }}>🌱</div>
   if (!user) return <Navigate to="/login" replace />
   if (role && user.role !== role) return <Navigate to={user.role === 'driver' ? '/driver' : '/farmer'} replace />
   return children
 }
 
 function Root() {
-  const { user } = useAuth()
+  const { user, authLoading } = useAuth()
+  if (authLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '2rem' }}>🌱</div>
   if (!user) return <Navigate to="/login" replace />
   return <Navigate to={user.role === 'driver' ? '/driver' : '/farmer'} replace />
 }
