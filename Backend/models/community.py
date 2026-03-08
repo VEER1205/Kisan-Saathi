@@ -19,7 +19,7 @@ class PostOut(BaseModel):
     id: str
     user_id: str
     user_name: str
-    image_url: str
+    image_url: Optional[str] = None
     caption: str
     tags: list[str]
     likes: list[str]          # list of user_ids who liked

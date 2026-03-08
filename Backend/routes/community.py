@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, Query, Path
 
 from models.community import PostOut, CommentOut, CommentCreate
@@ -21,7 +22,7 @@ async def get_feed(
 async def create_post(
     caption: str = Form(...),
     tags: str = Form("", description="Comma-separated tags e.g. 'wheat,disease,advice'"),
-    file: UploadFile = File(..., description="Crop image (JPEG/PNG/WebP)"),
+    file: Optional[UploadFile] = File(None, description="Crop image (JPEG/PNG/WebP) — optional"),
     user: UserOut = Depends(get_current_user),
 ):
     """Upload a photo with a caption to the community feed."""

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import cloudinary
 import cloudinary.uploader
 from bson import ObjectId
+from typing import Optional
 from fastapi import UploadFile, HTTPException
 
 from config import get_settings
@@ -54,19 +55,19 @@ async def get_feed(skip: int = 0, limit: int = 20) -> list[PostOut]:
     return posts
 
 
-async def create_post(caption: str, tags: list[str], file: UploadFile, user_id: str, user_name: str) -> PostOut:
-    if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
-        raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted.")
-
-    contents = await file.read()
-
-    _configure_cloudinary()
-    upload_result = cloudinary.uploader.upload(
-        io.BytesIO(contents),
-        folder="kisan_sathi/community",
-        resource_type="image",
-    )
-    image_url = upload_result["secure_url"]
+async def create_post(caption: str, tags: list[str], file: Optional[UploadFile], user_id: str, user_name: str) -> PostOut:
+    image_url: Optional[str] = None
+    if file is not None:
+        if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted.")
+        contents = await file.read()
+        _configure_cloudinary()
+        upload_result = cloudinary.uploader.upload(
+            io.BytesIO(contents),
+            folder="kisan_sathi/community",
+            resource_type="image",
+        )
+        image_url = upload_result["secure_url"]
 
     db = get_database()
     now = datetime.now(timezone.utc)
