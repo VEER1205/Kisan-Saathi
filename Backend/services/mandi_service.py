@@ -71,6 +71,10 @@ async def get_prices(crop: str | None = None, district: str | None = None, state
     if cached:
         return cached
 
+    # Cache miss — skip API call if key not configured
+    if not settings.datagovin_api_key:
+        return []   # No API key → return empty; seed data handles this in dev
+
     # Cache miss — fetch from API
     records = await _fetch_from_datagovin(crop, district, state)
     prices = []
