@@ -2,6 +2,7 @@ import io
 from datetime import datetime, timezone
 
 import google.generativeai as genai
+import google.api_core.exceptions
 import cloudinary
 import cloudinary.uploader
 from PIL import Image
@@ -42,10 +43,26 @@ Common diseases to detect: Leaf Blight, Powdery Mildew, Root Rot, Aphid Infestat
 def _run_gemini_vision(image_bytes: bytes) -> tuple[str, float, str, list[str]]:
     """Use Gemini Vision to analyze a plant image and return diagnosis."""
     genai.configure(api_key=settings.gemini_api_key)
-    model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+    model = genai.GenerativeModel(model_name="gemini-2.5-flash-lite")
 
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    response = model.generate_content([DIAGNOSIS_PROMPT, image])
+
+    try:
+        response = model.generate_content([DIAGNOSIS_PROMPT, image])
+    except google.api_core.exceptions.ResourceExhausted as e:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "AI diagnosis service is temporarily unavailable due to API quota limits. "
+                "Please try again later or contact support."
+            ),
+        ) from e
+    except google.api_core.exceptions.GoogleAPIError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"AI diagnosis service error: {str(e)}",
+        ) from e
+
     text = response.text.strip()
 
     # Parse structured response
@@ -90,6 +107,7 @@ async def diagnose_image(file: UploadFile, user_id: str) -> DiagnosisResult:
     contents = await file.read()
 
     # Run Gemini Vision diagnosis
+    # NOTE: HTTPException from quota/API errors will propagate up naturally here
     disease_name, confidence, severity, recommendations = _run_gemini_vision(contents)
 
     # Upload original image to Cloudinary
